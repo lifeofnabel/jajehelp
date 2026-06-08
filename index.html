@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JAJEHELP</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    :root {
+      --bg: #020204;
+      --text: #f4f4f5;
+      --muted: rgba(244, 244, 245, 0.62);
+      --pink: #ff2f92;
+      --pink-dark: #8f174f;
+      --glass: rgba(255, 255, 255, 0.055);
+      --border: rgba(255, 255, 255, 0.16);
+    }
+
+    body {
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(255, 47, 146, 0.18), transparent 28%),
+        radial-gradient(circle at 20% 70%, rgba(143, 23, 79, 0.14), transparent 28%),
+        linear-gradient(180deg, #09050a 0%, #020204 58%, #000 100%);
+      color: var(--text);
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .grid {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(circle at center, black 0%, transparent 72%);
+      pointer-events: none;
+    }
+
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.025) 0px,
+        rgba(255,255,255,0.025) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .noise {
+      position: fixed;
+      inset: -20%;
+      z-index: 4;
+      background:
+        radial-gradient(circle at 30% 40%, rgba(255, 47, 146, 0.12), transparent 35%),
+        radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.025), transparent 40%);
+      filter: blur(60px);
+      animation: fog 13s infinite alternate ease-in-out;
+      pointer-events: none;
+    }
+
+    @keyframes fog {
+      from { transform: translate(-3%, -2%) scale(1); }
+      to { transform: translate(4%, 3%) scale(1.12); }
+    }
+
+    .page {
+      position: relative;
+      z-index: 5;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+    }
+
+    .terminal-card {
+      width: min(760px, 94vw);
+      padding: 42px 34px 38px;
+      border-radius: 30px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025));
+      border: 1px solid var(--border);
+      box-shadow:
+        0 0 80px rgba(255, 47, 146, 0.18),
+        inset 0 0 26px rgba(255,255,255,0.035);
+      backdrop-filter: blur(18px);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .terminal-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        120deg,
+        transparent 0%,
+        rgba(255, 47, 146, 0.10) 46%,
+        transparent 60%
+      );
+      transform: translateX(-100%);
+      animation: shine 7s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes shine {
+      0%, 65% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 18px;
+      left: 22px;
+      right: 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: rgba(255,255,255,0.36);
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      user-select: none;
+    }
+
+    .dots {
+      display: flex;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.22);
+    }
+
+    .dot.active {
+      background: var(--pink);
+      box-shadow: 0 0 14px rgba(255, 47, 146, 0.9);
+    }
+
+    h1 {
+      margin-top: 30px;
+      font-size: clamp(3.2rem, 9vw, 8.3rem);
+      font-weight: 900;
+      letter-spacing: 0.11em;
+      line-height: 0.92;
+      color: #fff;
+      text-shadow:
+        0 0 10px rgba(255, 47, 146, 0.85),
+        0 0 34px rgba(255, 47, 146, 0.42),
+        0 0 80px rgba(255, 47, 146, 0.18);
+      animation: glitch 4.8s infinite;
+    }
+
+    @keyframes glitch {
+      0%, 92%, 100% { transform: translate(0); opacity: 1; }
+      93% { transform: translate(2px, -1px); opacity: 0.82; }
+      94% { transform: translate(-3px, 1px); opacity: 1; }
+      95% { transform: translate(1px, 2px); opacity: 0.9; }
+      96% { transform: translate(0); opacity: 1; }
+    }
+
+    .subtitle {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      letter-spacing: 0.12em;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      height: 1.1em;
+      margin-left: 8px;
+      background: var(--pink);
+      vertical-align: -3px;
+      box-shadow: 0 0 18px rgba(255, 47, 146, 0.8);
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 48% { opacity: 1; }
+      49%, 100% { opacity: 0; }
+    }
+
+    .projects-btn {
+      margin-top: 36px;
+      padding: 14px 42px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.055);
+      color: #fff;
+      font-size: 1rem;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow:
+        0 0 28px rgba(255, 47, 146, 0.18),
+        inset 0 0 14px rgba(255,255,255,0.035);
+      transition: 0.25s ease;
+    }
+
+    .projects-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 47, 146, 0.72);
+      box-shadow:
+        0 0 42px rgba(255, 47, 146, 0.38),
+        inset 0 0 18px rgba(255,255,255,0.06);
+    }
+
+    .footer {
+      position: fixed;
+      left: 50%;
+      bottom: 26px;
+      transform: translateX(-50%);
+      z-index: 6;
+      display: flex;
+      gap: 14px;
+    }
+
+    .social-btn {
+      text-decoration: none;
+      color: rgba(255,255,255,0.78);
+      padding: 11px 20px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(12px);
+      font-size: 0.9rem;
+      letter-spacing: 0.06em;
+      transition: 0.25s ease;
+      box-shadow: 0 0 18px rgba(255, 47, 146, 0.10);
+    }
+
+    .social-btn:hover {
+      color: #fff;
+      border-color: rgba(255, 47, 146, 0.65);
+      box-shadow: 0 0 28px rgba(255, 47, 146, 0.32);
+      transform: translateY(-2px);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0,0,0,0.62);
+      backdrop-filter: blur(10px);
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-box {
+      width: min(440px, 100%);
+      padding: 42px 32px;
+      border-radius: 30px;
+      text-align: center;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.035));
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow:
+        0 0 70px rgba(255, 47, 146, 0.26),
+        inset 0 0 24px rgba(255,255,255,0.04);
+      animation: pop 0.22s ease;
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: scale(0.94) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-box p {
+      font-size: 1.25rem;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.88);
+      text-shadow: 0 0 22px rgba(255, 47, 146, 0.55);
+    }
+
+    .close-btn {
+      margin-top: 28px;
+      padding: 10px 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.055);
+      color: white;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .close-btn:hover {
+      border-color: rgba(255, 47, 146, 0.65);
+      box-shadow: 0 0 24px rgba(255, 47, 146, 0.28);
+    }
+
+    @media (max-width: 560px) {
+      .terminal-card {
+        padding: 40px 20px 34px;
+      }
+
+      h1 {
+        letter-spacing: 0.055em;
+      }
+
+      .footer {
+        bottom: 18px;
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="particles"></canvas>
+
+  <div class="grid"></div>
+  <div class="scanlines"></div>
+  <div class="noise"></div>
+
+  <main class="page">
+    <section class="terminal-card">
+      <div class="top-bar">
+        <div class="dots">
+          <span class="dot"></span>
+          <span class="dot active"></span>
+          <span class="dot"></span>
+        </div>
+        <span>01:JAJEHELP</span>
+      </div>
+
+      <h1>JAJEHELP</h1>
+
+      <p class="subtitle">
+        Helps when need<span class="cursor"></span>
+      </p>
+
+      <button class="projects-btn" id="projectsBtn">Projects</button>
+    </section>
+  </main>
+
+  <div class="modal" id="modal">
+    <div class="modal-box">
+      <p>Come back in August</p>
+      <button class="close-btn" id="closeBtn">Close</button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <a class="social-btn" href="http://github.com/lifeofnabel/" target="_blank">GitHub</a>
+    <a class="social-btn" href="http://instagram.com/lifeofnabel" target="_blank">@lifeofnabel</a>
+  </footer>
+
+  <script>
+    const canvas = document.getElementById("particles");
+    const ctx = canvas.getContext("2d");
+
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    function createParticles() {
+      particles = [];
+
+      const count = Math.floor((window.innerWidth * window.innerHeight) / 8500);
+
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 1.6 + 0.35,
+          speedX: (Math.random() - 0.5) * 0.28,
+          speedY: (Math.random() - 0.5) * 0.28,
+          opacity: Math.random() * 0.45 + 0.12
+        });
+      }
+    }
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach((p, index) => {
+        p.x += p.speedX;
+        p.y += p.speedY;
+
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 47, 146, ${p.opacity})`;
+        ctx.fill();
+
+        for (let j = index + 1; j < particles.length; j++) {
+          const other = particles[j];
+          const dx = p.x - other.x;
+          const dy = p.y - other.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 105) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(other.x, other.y);
+            ctx.strokeStyle = `rgba(255, 47, 146, ${0.08 * (1 - distance / 105)})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      });
+
+      requestAnimationFrame(drawParticles);
+    }
+
+    window.addEventListener("resize", () => {
+      resizeCanvas();
+      createParticles();
+    });
+
+    resizeCanvas();
+    createParticles();
+    drawParticles();
+
+    const modal = document.getElementById("modal");
+    const projectsBtn = document.getElementById("projectsBtn");
+    const closeBtn = document.getElementById("closeBtn");
+
+    projectsBtn.addEventListener("click", () => {
+      modal.classList.add("active");
+    });
+
+    closeBtn.addEventListener("click", () => {
+      modal.classList.remove("active");
+    });
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        modal.classList.remove("active");
+      }
+    });
+  </script>
+</body>
+</html>
